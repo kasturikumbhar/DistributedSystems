@@ -1,4 +1,129 @@
-venv/
-*.db
-__pycache__/
-*.pyc
+# Distributed Systems
+
+This repository contains a lightweight distributed job-processing project implemented in Python. It demonstrates a simple queue-based design using FastAPI, Redis, SQLAlchemy, and SQLite for local development.
+
+## What it does
+
+The system accepts job submissions through an HTTP endpoint, stores metadata in a database, pushes the job onto a Redis queue, and processes it in a background worker. It also includes a recovery worker that requeues jobs that appear to be stuck in a PROCESSING state.
+
+## Current architecture
+
+- API layer: FastAPI service
+- Data layer: SQLAlchemy + SQLite
+- Queue: Redis
+- Background consumers: worker and recovery worker
+
+The job lifecycle is intentionally simple:
+
+1. Submit job
+2. Store in DB
+3. Enqueue in Redis
+4. Worker marks status as PROCESSING
+5. Worker executes task
+6. Successful tasks become SUCCESS; failed tasks become FAILED or DEAD
+
+## Repository structure
+
+```text
+DistributedSystems/
+├── README.md
+├── job-system/
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── requirements.txt
+│   └── app/
+│       ├── __init__.py
+│       ├── config.py
+│       ├── db.py
+│       ├── main.py
+│       ├── models.py
+│       ├── redis_client.py
+│       ├── recovery_worker.py
+│       ├── schemas.py
+│       ├── worker.py
+│       └── jobdb.db
+```
+
+## How to run
+
+From the repository root:
+
+```bash
+cd job-system
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Start Redis locally:
+
+```bash
+redis-server
+```
+
+Start the FastAPI app:
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Start a worker:
+
+```bash
+python app/worker.py
+```
+
+Start recovery worker:
+
+```bash
+python app/recovery_worker.py
+```
+
+## Example API requests
+
+Submit a job:
+
+```bash
+curl -X POST "http://localhost:8000/submit-job" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user-123",
+    "payload": {"task": "email", "to": "example@example.com"},
+    "idempotent_key": "task-001"
+  }'
+```
+
+Check a job:
+
+```bash
+curl "http://localhost:8000/job/{job_id}"
+```
+
+List all jobs:
+
+```bash
+curl "http://localhost:8000/jobs"
+```
+
+## Architectural improvements already applied
+
+This version adds a cleaner structure and a few practical enhancements:
+
+- Proper package imports for application modules
+- Centralized environment-based configuration
+- Cleaner job retry logic and dead-letter handling
+- Better API response model
+- Dependency manifest for easier local setup
+
+## Production considerations
+
+This is a good learning/demo system, but a production-ready distributed job platform would need additional work such as:
+
+- PostgreSQL instead of SQLite
+- Persistent job payload storage and clearer task schema
+- Separate workers for different job types
+- Health checking and observability
+- Message broker substitution for higher throughput and reliability
+- Containerization and orchestration
+

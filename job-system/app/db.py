@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker 
-DATABASE_URL = "sqlite:///./jobdb.db"
-engine=create_engine(DATABASE_URL, connect_args={"check_same_thread":False})
-SessionLocal=sessionmaker(bind=engine)
-
- 
+DATABASE_URL=sqlite:///./jobdb.db
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_QUEUE_NAME=job_queue
+JOB_MAX_RETRIES=3
+JOB_PROCESSING_TIMEOUT_SECONDS=10
+JOB_WORKER_POLL_INTERVAL_SECONDS=2
+JOB_RECOVERY_SLEEP_SECONDS=360
